@@ -14,6 +14,10 @@ I have simplified some steps for that. In a real-world case, these simplificatio
 The work is done in Spanish (I'm spanish, after all).
 I will try to include an English version in the future.
 
+
+I included a HTML markdown file (for those not so acustomed to R, it's something similar to Jupiter notebook) , a .rmd file, and a txt file with the raw code.
+
+
 Regards:
 
 Guillermo
