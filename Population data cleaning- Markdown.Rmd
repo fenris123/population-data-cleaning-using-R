@@ -1,0 +1,371 @@
+---
+title: "Ejercicio de limpieza de datos"
+author: "Guillermo"
+date: "2024-04-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+### PASO 0
+
+IMPORTANTE: LEER EL DOCUMENTO README.
+
+INSTALACION DE LIBRERIAS NECESARIAS
+
+
+```{r PASO 0}
+library(readxl)
+library(dplyr)
+```
+<br><br><br>
+
+### PASO 1
+CARGA DE LOS ARCHIVOS Y VISUALIZACION INICIAL VEASE LAS NOTAS ADICIONALES A CADA LADO DEL CODIGO.  
+CONOCEMOS LA TERMINACION DEL ARCHIVO EXCEL.    
+SI NO, USARIAMOS read_excel.  
+
+
+
+```{r PASO 1}
+
+
+
+Poblacion01<- read_xls("C:/Datos/padronmunicipal/pobmun01.xls")     
+Poblacion21<- read_xlsx("C:/Datos/padronmunicipal/pobmun21.xlsx")
+
+```
+
+
+
+
+NORMALMENTE SE USARIA VIEW, O HEAD Y TAIL, NO LAS 3.   
+PONDREMOS LAS 3 A EFECTOS DIDACTICOS.  
+
+
+
+
+```{r}
+
+View (Poblacion01)
+View (Poblacion21)
+
+
+head (Poblacion01)
+head (Poblacion21)
+
+
+tail(Poblacion01)
+tail(Poblacion21)
+
+```
+
+
+CORREGIMOS EL PROBLEMA DEBIDO A QUE LA PRIMERA LINEA DEL EXCEL ES UNA NOTA.
+
+
+
+```{r}
+
+Poblacion01<- read_xls("C:/Datos/padronmunicipal/pobmun01.xls", skip = 1, col_names = TRUE) 
+Poblacion21<- read_xlsx("C:/Datos/padronmunicipal/pobmun21.xlsx", skip = 1, col_names =  TRUE)
+
+```
+
+<br><br><br>
+
+### PASO 2
+ANALISIS (muy) INICIAL DE LOS DATOS; CENTRANDONOS EN LA CANTIDAD DE POBLACION NUEVAMENTE, VEASE NOTAS INTERIORES AL LADO DEL CODIGO.  
+
+ANALISIS SIMPLES MUY INICIALES. SOLO PARA TENER UNA IDEA. SON PARA NOSOTROS Y NO PARA LOS DEMAS.  
+POR ELLO NO NOS MOLESTAMOS EN COSAS COMO CAMBIAR NOMBRES EN EL GRAFICO ETC.  
+
+
+
+```{r PASO 2}
+
+
+dim (Poblacion01)             
+dim (Poblacion21)             ###   ###
+
+summary (Poblacion01)     
+summary (Poblacion21)  
+
+plot (Poblacion01$POB01)        
+plot (Poblacion21$POB21)        
+
+
+barplot (Poblacion01$POB01)
+barplot (Poblacion21$POB21)
+
+
+
+```
+
+
+
+
+<br><br><br>
+
+### PASO 3
+ESTUDIO DE LAS DIFERENCIAS EN EL LISTADO DE MUNICIPIOS.  
+
+EL PUNTO ANTERIOR NOS MOSTRO QUE EL NUMERO DE FILAS (MUNICIPIOS) ES DIFERENTE.   
+DEBE ESTUDIARSE Y SOLUCIONARSE AL COMBINAR LOS DATOS DE LAS TABLAS.  
+
+
+```{r PASO 3}
+
+Discordanciasmunicip <- anti_join (Poblacion01, Poblacion21, by= c("NOMBRE","PROVINCIA"))
+print (Discordanciasmunicip)
+
+```
+
+
+
+VEMOS QUE HAY MAS DE 1300 DIFERENCIAS.  
+LAS ESTUDIAREMOS MAS DETALLADAMENTE.  
+
+
+```{r}
+
+municipios01 <-Poblacion01[,c("NOMBRE", "PROVINCIA")]
+municipios21 <-Poblacion21[,c("NOMBRE", "PROVINCIA")]
+diferencias <- setdiff (municipios01,municipios21)
+print(diferencias)
+
+
+```
+
+
+
+<br><br><br>
+
+### PASO 4
+
+EN EL PUNTO ANTERIOR, HEMOS AMPLIANDO EL NUMERO DE ERRORES VISIBLES USANDO print(diferencias, n=1400).  
+NO LO HEMOS INCLUIDO PARA NO SATURAR EL DOCUMENTO.
+
+
+VEMOS EN ESA AMPLIACION QUE MUCHOS DE LOS ERRORES SON POR DISTINTA NOMENCLATURA DE LA PROVINCIA.  
+INTENTAREMOS CORREGIR LAS DIFERENCIAS POR ESA UNA DIFERENTE NOMENCLATURA.  
+
+
+SOBREESCRIBIMOS LA VARIABLE DIFERENCIA ANTERIOR. NO VAMOS A NECESITARLA.
+EN OTROS CASOS PUEDE SER ADECUADO CONSERVARLA.  
+
+
+```{r PASO 4}
+
+
+Provincias01 <- unique(Poblacion01$PROVINCIA)
+Provincias21 <- unique(Poblacion21$PROVINCIA)
+
+
+
+diferencias <- setdiff (Provincias01, Provincias21)
+print (diferencias)
+
+```
+
+
+
+ESTO NOS HA DADO LOS NOMBRES DISTINTOS DE LA TABLA POBLACION 01.  
+PARA OBTENER LOS DE POBLACION 21, LO MAS FACIL ES INVERTIR EL ORDEN EN setdiff.  
+
+
+```{r}
+
+diferencias2 <- setdiff (Provincias21, Provincias01)
+print (diferencias2)
+
+
+```
+
+
+
+PROCEDEMOS A SUSTITUIR LOS NOMBRES PARA QUE LA NOMENCLATURA SEA LA MISMA.
+
+
+```{r}
+
+
+nombresviejos <- c("Araba/Álava", "Balears, Illes", "Bizkaia","Coruña, A", "Gipuzkoa" ,"Palmas, Las" ,"Rioja, La" )
+nombresnuevos <- c("Álava","Balears (Illes)","Vizcaya","Coruña (A)","Guipúzcoa", "Palmas (Las)","Rioja, La")
+
+
+Poblacion21$PROVINCIA <- ifelse(Poblacion21$PROVINCIA %in% nombresviejos, 
+                                nombresnuevos[match(Poblacion21$PROVINCIA, nombresviejos)],
+                                Poblacion21$PROVINCIA)
+
+
+```
+
+
+
+COMPROBAMOS SI ASI DISMINUYE EL NUMERO DE DIFERENCIAS.
+
+
+```{r}
+
+municipios01 <-Poblacion01[,c("NOMBRE", "PROVINCIA")]
+municipios21 <-Poblacion21[,c("NOMBRE", "PROVINCIA")]
+diferencias <- setdiff (municipios01,municipios21)
+print(diferencias)           
+
+
+```
+
+
+VEMOS QUE HEMOS REDUCIDO EL NUMERO DE DIFERENCIAS EN UNOS 400.  
+POR ULTIMO, Y AUNQUE QUIZAS NO LO USEMOS MAS ADELANTE, IGUALAREMOS EL NOMBRE DE LA COLUMNA "VARONES", SUSTITUYENDOLO POR "HOMBRES".  
+
+
+
+```{r}
+
+colnames(Poblacion01)[colnames(Poblacion01) == "VARONES"] <- "HOMBRES"
+
+
+```
+
+
+<br><br><br>
+
+### PASO 5
+
+LIMPIEZA DE LAS DISCORDANCIAS A NIVEL DE NOMENCLATURA MUNICIPAL.
+
+
+SIGUE HABIENDO CASI 1000 MUNICIPIOS CON  DISCORDANCIA EN LAS DOS TABLAS.  
+VAMOS A LOCALIZARLOS Y EXAMINARLOS.
+
+
+VOLVEREMOS A SOBREESCRIBIR LA VARIABLE "DIFERENCIAS" QUE YA NO NECESITAMOS. EN ALGUNOS CASOS PUEDE CONVENIR GUARDARLA.
+
+
+
+```{r PASO 5}
+
+
+# ya habiamos hecho este paso justo antes, como comprobacion de errores en las provincias. Se incluye de nuevo solo a efecto didactico.
+
+
+municipios01 <-Poblacion01[,c("NOMBRE", "PROVINCIA")]
+municipios21 <-Poblacion21[,c("NOMBRE", "PROVINCIA")]
+diferencias <- setdiff (municipios01,municipios21)
+print(diferencias)
+
+diferencias2 <- setdiff (municipios21,municipios01)
+print(diferencias)
+
+```
+
+CREAMOS UN NUEVO ARRAY QUE TENGA TODOS LOS DATOS DE LOS MUNICIPIOS DIFERENTES.  
+
+LO HAREMOS CON "DIFERENCIAS 2" QUE ES EL MAYOR. (debe incluir datos que no esten presentes a la inversa, posiblemente datos no discordantes sino directamente filas no presentes).  
+
+
+```{r}
+
+municipiosdistintos<- left_join(diferencias2,Poblacion21, by=c("NOMBRE","PROVINCIA"))
+
+
+```
+
+
+VAMOS A REPRESENTAR UN GRAFICO SIMPLE DE POBLACION DE LOS MUNICIPIOS NO COINCIDENTES.  
+DESACTIVAREMOS LA NOTACION CIENTIFICA EN EL EJE Y. PARA VOLVER A ACTIVARLA USAR options(scipen = 0)
+
+
+```{r}
+
+options(scipen=999)       
+plot (municipiosdistintos$POB21)
+
+
+```
+
+
+
+
+
+<br><br><br>
+
+### PASO 6
+
+HEMOS VISTO QUE EN GENERAL ESTOS MUNICIPIOS TIENEN MUY POCA POBLACION, CON SOLO 5 CASOS  QUE RONDAN LAS 30.000 PERSONAS, Y UNO QUE SUPERA LAS 60.000.  
+
+POR SIMPLICIDAD, VAMOS DIRECTAMENTE A ELIMINAR ESTOS MUNICIPIOS.    
+
+EN UN ANALISIS REAL, NO HECHO CON EFECTOS SIMPLEMENTE DIDACTICOS, HABRIA QUE REALIZAR UN PROCESO SIMILAR AL DE LAS PROVINCIAS.  
+
+
+LO PRIMERO QUE HAREMOS SERA INCLUIR EN EL NOMBRE DE TODAS LAS COLUMNAS  DE CADA TABLA EL AÑO, ASI NO TENDRA LA MISMA NOMEMCLATURA EN CADA TABLA.
+
+```{r PASO 6}
+
+
+
+#SI SE QUISIERA HACER USANDO "COLNAMES" POR ALGUN MOTIVO 
+#HAY QUE TRANSFORMARLO ANTES EN DATA FRAME.
+
+
+
+
+Poblacion01 <- rename(Poblacion01,
+                      HOMBRES01 = HOMBRES,
+                      MUJERES01 = MUJERES,
+                      CPRO01= CPRO,
+                      CMUN01=CMUN)
+                      
+Poblacion21 <- rename(Poblacion21,
+                      HOMBRES21 = HOMBRES,
+                      MUJERES21 = MUJERES,
+                      CPRO21= CPRO,
+                      CMUN21=CMUN)
+
+```
+
+
+COMBINAREMOS TODOS LOS DATOS EN UNA SOLA TABLA, SALVO AQUELLAS LINEAS EN LAS QUE "PROVINCIA" Y "NOMBRE" 
+
+```{r}
+
+tabla_combinada <- inner_join(Poblacion01, Poblacion21, by = c("NOMBRE", "PROVINCIA"))
+
+
+```
+
+
+HACEMOS ALGUNAS COMPROBACIONES.
+
+```{r}
+
+View (tabla_combinada)
+str (tabla_combinada)
+
+sum(7168+963)  
+
+
+# 7168 ES EL NUMERO DE FILAS DE ESTA TABLA. 963 EL NUMERO DE DIFERENCIAS (vease paso 5).  
+
+# EL RESULTADO COMO ERA DE ESPERAR, COINCIDE CON EL NUMERO DE DATOS DE LA TABLA Poblacion21
+
+```
+
+
+<br><br><br>
+
+# CONSIDERACIONES FINALES
+
+AQUI TERMINA LA PARTE DE LIMPIEZA DE DATOS. NO SE PUEDEN HACER MAS TRANSFORMACIONES SIN SABER EL OBJETIVO.
+
+TODO ESTE TRABAJO ESTA PLANTEADO COMO UNA EXPOSICION DE HABILIDADES Y A EFECTOS DIDACTICOS.  POR ELLO SE HAN SIMPLIFICADO ALGUNAS CUESTIONES. 
+
+EN PARTICULAR LA OPCION DE ELIMINAR LOS DATOS NO COINCIDENTES ES SIMPLE, PERO EN EL MUNDO REAL DEBERIA CONSIDERARSE CUIDADOSAMENTE SU IMPACTO SOBRE LOS RESULTADOS. PROBABLEMENTE NO FUESE LA MAS ADECUADA.
+
